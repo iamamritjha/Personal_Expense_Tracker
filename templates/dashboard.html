@@ -1,0 +1,226 @@
+{% extends "base.html" %} {% block title %}Dashboard | ExpenseTracker{% endblock
+%} {% block content %}
+<div class="flex justify-end mb-4">
+  <button
+    id="openModalBtn"
+    class="bg-gradient-to-r from-emerald-400 to-indigo-400 px-8 py-2 rounded-xl font-extrabold shadow-lg text-white text-lg animate__animated animate__pulse animate__infinite hover:scale-110 transition"
+  >
+    + Add Expense
+  </button>
+</div>
+{% if starting_amount is not none %}
+<div class="mb-6 p-4 text-center rounded-lg font-semibold shadow-lg animate__animated animate__fadeInDown
+    {% if alert_type == 'danger' %}bg-red-200 text-red-900 animate__animated animate__flash animate__infinite
+    {% elif alert_type == 'warning' %}bg-orange-200 text-orange-900 animate__animated animate__pulse animate__infinite
+    {% elif alert_type == 'info' %}bg-yellow-100 text-yellow-800
+    {% else %}bg-green-100 text-green-800
+    {% endif %}
+    ">
+    Starting Budget: ₹{{ starting_amount }} |
+    Balance Remaining: ₹{{ balance }} <br>
+    {% if alert_message %}
+        <span class="font-bold">{{ alert_message }}</span>
+    {% endif %}
+</div>
+{% else %}
+<div class="mb-6 p-4 text-center rounded-lg font-semibold shadow-lg bg-blue-100 text-blue-800">
+    Please <a href="{{ url_for('set_budget') }}" class="text-indigo-700 underline hover:text-indigo-900 font-bold">set your monthly budget</a> first.
+</div>
+{% endif %}
+
+<!-- Expense Modal -->
+<div
+  id="expenseModal"
+  class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden"
+>
+  <div
+    class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 animate__animated animate__zoomIn relative border-4 border-pink-100"
+  >
+    <button
+      id="closeModalBtn"
+      class="absolute top-4 right-6 text-2xl font-extrabold text-gray-400 hover:text-pink-600 animate__animated animate__fadeIn"
+    >
+      &times;
+    </button>
+    <h2 class="text-2xl font-extrabold text-indigo-700 mb-6">Add Expense</h2>
+    <form
+      action="{{ url_for('add_expense') }}"
+      method="POST"
+      autocomplete="off"
+      class="space-y-4"
+    >
+      <input
+        type="datetime-local"
+        name="date_time"
+        required
+        class="w-full p-3 border-2 border-indigo-200 rounded-xl bg-indigo-50 animate__animated animate__fadeInDown"
+      />
+      <input
+        type="number"
+        name="amount"
+        placeholder="Amount"
+        required
+        class="w-full p-3 border-2 border-emerald-200 rounded-xl bg-emerald-50 animate__animated animate__fadeInLeft"
+      />
+      <input
+        type="text"
+        name="category"
+        placeholder="Category"
+        required
+        class="w-full p-3 border-2 border-pink-200 rounded-xl bg-pink-50 animate__animated animate__fadeInRight"
+      />
+      <input
+        type="text"
+        name="with_whom"
+        placeholder="With Whom"
+        class="w-full p-3 border-2 border-indigo-100 rounded-xl bg-white animate__animated animate__fadeInLeft"
+      />
+      <input
+        type="text"
+        name="purpose"
+        placeholder="Purpose"
+        required
+        class="w-full p-3 border-2 border-indigo-200 rounded-xl bg-indigo-50 animate__animated animate__fadeInRight"
+      />
+      <button
+        type="submit"
+        class="w-full py-3 rounded-xl font-bold bg-gradient-to-l from-pink-500 to-emerald-400 hover:from-pink-700 hover:to-emerald-700 text-white shadow-xl animate__animated animate__jello animate__infinite"
+      >
+        Add Expense
+      </button>
+    </form>
+  </div>
+</div>
+
+<div
+  class="bg-gradient-to-br from-white to-indigo-50 rounded-2xl px-8 py-10 shadow-2xl mt-8 animate__animated animate__fadeIn"
+>
+  <h2
+    class="text-4xl font-extrabold text-indigo-700 mb-8 text-center animate__animated animate__tada"
+  >
+    Expense Dashboard
+  </h2>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+    <div
+      class="p-6 rounded-xl text-center shadow-lg bg-gradient-to-t from-emerald-200 to-white animate__animated animate__flipInX"
+    >
+      <p class="text-lg text-gray-600 mb-1 font-semibold">Total Spent</p>
+      <div
+        class="text-3xl text-emerald-600 font-black mt-2 animate__animated animate__heartBeat animate__infinite"
+      >
+        ₹{{ total_spent }}
+      </div>
+    </div>
+    <div
+      class="p-6 rounded-xl text-center shadow-lg bg-gradient-to-r from-indigo-200 to-white animate__animated animate__flipInY"
+    >
+      <p class="text-lg text-gray-600 mb-1 font-semibold">Transactions</p>
+      <div
+        class="text-3xl text-pink-500 font-black mt-2 animate__animated animate__swing animate__infinite"
+      >
+        {{ total_count }}
+      </div>
+    </div>
+    <div
+      class="p-6 rounded-xl text-center shadow-lg bg-gradient-to-tl from-pink-200 to-white animate__animated animate__flipInY animate__delay-1s"
+    >
+      <p class="text-lg text-gray-600 mb-1 font-semibold">Highest Expense</p>
+      <div
+        class="text-3xl text-indigo-700 font-black mt-2 animate__animated animate__tada animate__infinite"
+      >
+        ₹{{ max_expense }}
+      </div>
+    </div>
+  </div>
+  <div class="mb-12 grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div>
+      <h3
+        class="font-bold text-2xl text-emerald-600 mb-3 animate__animated animate__fadeInLeftBig"
+      >
+        Monthly by Category
+      </h3>
+      {% if month_chart %}
+      <img
+        src="data:image/png;base64,{{ month_chart }}"
+        class="w-full rounded-2xl shadow-xl animate__animated animate__zoomInDown animate__delay-1s"
+      />
+      {% else %}
+      <div
+        class="text-center text-gray-500 animate__animated animate__fadeInRight"
+      >
+        No expense data yet.
+      </div>
+      {% endif %}
+    </div>
+    <div>
+      <h3
+        class="font-bold text-2xl text-indigo-600 mb-3 animate__animated animate__fadeInRightBig"
+      >
+        Weekly (Polar Chart)
+      </h3>
+      {% if week_chart %}
+      <img
+        src="data:image/png;base64,{{ week_chart }}"
+        class="w-full rounded-2xl shadow-xl animate__animated animate__zoomInUp animate__delay-2s"
+      />
+      {% else %}
+      <div class="text-center text-gray-500 animate__animated animate__fadeIn">
+        No weekly expense data yet.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  <div
+    class="bg-white/90 px-8 py-6 rounded-xl shadow-lg animate__animated animate__lightSpeedInLeft animate__delay-2s mb-12"
+  >
+    <h4
+      class="font-semibold text-2xl text-indigo-900 mb-4 animate__animated animate__fadeIn"
+    >
+      All Expenses
+    </h4>
+    <table
+      class="w-full text-left animate__animated animate__fadeIn animate__delay-1s"
+    >
+      <thead>
+        <tr class="bg-indigo-100 font-extrabold text-indigo-700 text-lg">
+          <th class="p-3">Date & Time</th>
+          <th class="p-3">Amount</th>
+          <th class="p-3">Category</th>
+          <th class="p-3">Purpose</th>
+          <th class="p-3">With</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for exp in expenses %}
+        <tr
+          class="hover:bg-pink-50 transition animate__animated animate__fadeInUp animate__delay-1s"
+        >
+          <td>{{ exp.date_time }}</td>
+          <td class="text-pink-500 font-bold">₹{{ exp.amount }}</td>
+          <td class="font-semibold text-indigo-700">{{ exp.category }}</td>
+          <td>{{ exp.purpose }}</td>
+          <td>{{ exp.with_whom }}</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="5" class="p-4 text-center text-gray-500">
+            No expenses yet.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<script>
+  document.getElementById("openModalBtn").onclick = () =>
+    document.getElementById("expenseModal").classList.remove("hidden");
+  document.getElementById("closeModalBtn").onclick = () =>
+    document.getElementById("expenseModal").classList.add("hidden");
+  window.onclick = function (e) {
+    if (e.target === document.getElementById("expenseModal")) {
+      document.getElementById("expenseModal").classList.add("hidden");
+    }
+  };
+</script>
+{% endblock %}

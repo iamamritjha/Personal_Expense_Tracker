@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Login | ExpenseTracker{% endblock %}
+{% block content %}
+<div class="animate__animated animate__bounceInDown max-w-md mx-auto bg-white/95 rounded-2xl px-8 py-12 shadow-2xl my-24">
+    <h2 class="text-3xl font-extrabold text-indigo-700 mb-8 text-center animate__animated animate__fadeInDown animate__faster">Login</h2>
+    <form action="{{ url_for('login') }}" method="POST" class="space-y-6">
+        <input type="email" name="email" placeholder="Email"
+        class="w-full p-3 border-2 border-emerald-200 rounded-xl focus:ring-2 focus:ring-emerald-400 bg-indigo-50 animate__animated animate__fadeInLeft" required>
+        <input type="password" name="password" placeholder="Password"
+        class="w-full p-3 border-2 border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-400 bg-emerald-50 animate__animated animate__fadeInRight" required>
+        <button type="submit"
+        class="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-indigo-500 to-emerald-400 hover:from-indigo-600 hover:to-emerald-600 text-white shadow-xl animate__animated animate__pulse animate__infinite">
+        Login
+        </button>
+    </form>
+    <p class="mt-6 text-gray-700 text-center">Don't have an account?
+        <a href="{{ url_for('signup') }}" class="text-pink-600 font-bold hover:underline animate__animated animate__heartBeat">Sign up</a>
+    </p>
+</div>
+{% endblock %}

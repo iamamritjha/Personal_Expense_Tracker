@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}ExpenseTracker{% endblock %}</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-tr from-emerald-100 via-indigo-200 to-pink-200 font-sans text-gray-800">
+    <nav class="flex items-center justify-between px-8 py-4 shadow-lg bg-white/80 animate__animated animate__fadeInDown animate__faster">
+        <div class="flex gap-4 items-center">
+            <div class="bg-gradient-to-br from-emerald-400 to-indigo-400 text-white rounded-lg px-4 py-2 shadow-lg font-extrabold text-2xl animate__animated animate__rotateIn">E</div>
+            <div>
+                <div class="text-xl font-bold text-indigo-800 animate__animated animate__lightSpeedInLeft">Amrit ExpenseTracker</div>
+                <div class="text-xs text-gray-700 italic -mt-1">Developed by Amrit</div>
+            </div>
+        </div>
+        <div>
+  {% if session.get('user_name') %}
+    <a href="{{ url_for('dashboard') }}" class="font-bold text-gradient bg-gradient-to-br from-emerald-500 to-indigo-500 bg-clip-text text-transparent animate__animated animate__fadeInRight">Dashboard</a>
+    <a href="{{ url_for('logout') }}" class="ml-8 font-bold text-indigo-700 hover:text-pink-500 transition animate__animated animate__flipInX">Logout</a>
+  {% else %}
+    <a href="{{ url_for('login') }}" class="font-bold hover:text-emerald-700 text-indigo-700 animate__animated animate__fadeInRightBig">Login</a>
+    <a href="{{ url_for('signup') }}" class="ml-8 font-bold text-pink-600 hover:text-indigo-700 animate__animated animate__fadeInRightBig animate__delay-1s">Signup</a>
+  {% endif %}
+</div>
+
+    </nav>
+    <main class="max-w-5xl mx-auto py-8 px-4">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="mb-6 animate__animated animate__fadeInUpBig">
+            {% for category, message in messages %}
+              <div class="mb-2 px-4 py-2 rounded-lg shadow-xl
+                  {% if category == 'success' %}bg-gradient-to-l from-emerald-200 to-green-100 text-emerald-900 animate__animated animate__fadeInDown
+                  {% else %}bg-gradient-to-l from-pink-200 to-red-100 text-pink-900 animate__animated animate__flash{% endif %}">
+                {{ message }}
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </main>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
