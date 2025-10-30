@@ -2,6 +2,7 @@ from calendar import weekday
 import mysql.connector
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 import io
+import os
 import base64
 import matplotlib.pyplot as plt
 import datetime
@@ -10,14 +11,13 @@ import numpy as np
 app = Flask(__name__)
 app.secret_key = "your_secret_key"  # Use a secure key here
 
-def get_db():
-    return mysql.connector.connect(
-        host="localhost",
-        port=3306,
-        user="root",
-        password="1234",  # apna password yahan dalen
-        database="expense_db"
-    )
+db = mysql.connector.connect(
+    host=os.environ.get("MYSQLHOST"),
+    user=os.environ.get("MYSQLUSER"),
+    password=os.environ.get("MYSQLPASSWORD"),
+    database=os.environ.get("MYSQLDATABASE")
+)
+
 
 def get_user_by_email(email):
     db = get_db()
@@ -242,3 +242,4 @@ def set_budget():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
