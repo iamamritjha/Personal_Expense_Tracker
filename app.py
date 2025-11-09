@@ -11,13 +11,14 @@ import numpy as np
 app = Flask(__name__)
 app.secret_key = "your_secret_key"  # Use a secure key here
 
-db = mysql.connector.connect(
-    host=os.environ.get("MYSQLHOST"),
-    user=os.environ.get("MYSQLUSER"),
-    password=os.environ.get("MYSQLPASSWORD"),
-    database=os.environ.get("MYSQLDATABASE")
-)
-
+def get_db():
+    return mysql.connector.connect(
+        host="localhost",
+        port=3306,
+        user="root",
+        password="1234",
+        database="expense_db"
+    )
 
 def get_user_by_email(email):
     db = get_db()
@@ -38,6 +39,9 @@ def get_expenses_for_user(username):
     for e in expenses:
         if isinstance(e['date_time'], str):
             e['date_time'] = datetime.datetime.strptime(e['date_time'], "%Y-%m-%d %H:%M:%S")
+        # Fix amount type for safety (convert from Decimal to float)
+        if not isinstance(e['amount'], float):
+            e['amount'] = float(e['amount'])
     return expenses
 
 @app.route('/')
@@ -90,7 +94,6 @@ def dashboard():
     month = now.month
     year = now.year
 
-    # Fetch user's monthly budget using username
     db = get_db()
     cur = db.cursor(dictionary=True)
     cur.execute("SELECT * FROM user_budgets WHERE username=%s AND month=%s AND year=%s", (username, month, year))
@@ -98,14 +101,12 @@ def dashboard():
     cur.close()
     db.close()
 
-    starting_amount = budget['starting_amount'] if budget else None
+    starting_amount = float(budget['starting_amount']) if budget and budget['starting_amount'] is not None else None
 
-    # Filter expenses for current month
     month_exps = [e for e in expenses if e['date_time'].month == month and e['date_time'].year == year]
-    total_spent = sum(e['amount'] for e in month_exps)
+    total_spent = sum(float(e['amount']) for e in month_exps)
     balance = starting_amount - total_spent if starting_amount is not None else None
 
-    # Alerts based on balance
     alert_message = None
     alert_type = None
     if balance is not None:
@@ -119,7 +120,6 @@ def dashboard():
             alert_message = "Less than ₹1000 left, spend wisely."
             alert_type = "info"
 
-    # --- Monthly Pie Chart ---
     category_totals = {}
     for e in month_exps:
         cat = e['category'] or 'Other'
@@ -146,14 +146,13 @@ def dashboard():
         month_chart = base64.b64encode(buf.getvalue()).decode()
         plt.close(fig)
 
-    # --- Weekly Polar Chart ---
     week_start = now - datetime.timedelta(days=now.weekday())
     week_exps = [e for e in expenses if week_start.date() <= e['date_time'].date() < (week_start.date() + datetime.timedelta(days=7))]
     week_days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
     values = []
     for wd in week_days:
         wd_num = week_days.index(wd) + 1
-        wd_total = sum(e['amount'] for e in week_exps if e['date_time'].isoweekday() == wd_num)
+        wd_total = sum(float(e['amount']) for e in week_exps if e['date_time'].isoweekday() == wd_num)
         values.append(wd_total)
     week_chart = ""
     if any(v > 0 for v in values):
@@ -176,17 +175,17 @@ def dashboard():
         plt.close(fig)
 
     return render_template('dashboard.html',
-                           user_name=session['user_name'],
-                           starting_amount=starting_amount,
-                           balance=balance,
-                           alert_message=alert_message,
-                           alert_type=alert_type,
-                           total_spent=total_spent,
-                           total_count=len(expenses),
-                           max_expense=max((e['amount'] for e in expenses), default=0),
-                           month_chart=month_chart,
-                           week_chart=week_chart,
-                           expenses=expenses)
+                          user_name=session['user_name'],
+                          starting_amount=starting_amount,
+                          balance=balance,
+                          alert_message=alert_message,
+                          alert_type=alert_type,
+                          total_spent=total_spent,
+                          total_count=len(expenses),
+                          max_expense=max((float(e['amount']) for e in expenses), default=0),
+                          month_chart=month_chart,
+                          week_chart=week_chart,
+                          expenses=expenses)
 
 @app.route('/add_expense', methods=['POST'])
 def add_expense():
@@ -196,13 +195,15 @@ def add_expense():
     db = get_db()
     cur = db.cursor()
     dt = request.form['date_time']
+    # Always convert amount to float before inserting/updating if needed
+    amount = float(request.form['amount'])
     cur.execute("""
         INSERT INTO expenses (username, date_time, amount, category, with_whom, purpose)
         VALUES (%s, %s, %s, %s, %s, %s)
     """, (
         session['user_name'],
         dt,
-        request.form['amount'],
+        amount,
         request.form['category'],
         request.form.get('with_whom',''),
         request.form['purpose']
@@ -242,4 +243,3 @@ def set_budget():
 
 if __name__ == "__main__":
     app.run(debug=True)
-
